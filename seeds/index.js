@@ -3,7 +3,7 @@ import cities from './cities.js';
 import Business from "../models/business.js";
 import { descriptors, places } from './seedHelpers.js';
 
-const url = 'mongodb+srv://yelpclone1:yelpclone1@cluster0.tnyqubr.mongodb.net/yelpclone1?retryWrites=true&w=majority'
+const url = 'mongodb+srv://db_user:Dbdb1122@cluster0.guxh1eb.mongodb.net/yelpclone?retryWrites=true&w=majority'
 
 mongoose.connect(url, {
     useNewUrlParser: true,
