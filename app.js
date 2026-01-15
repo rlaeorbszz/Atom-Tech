@@ -36,6 +36,7 @@ app.use(express.json());
 
 app.get('/', (req, res) => {
     res.render('home')
+
 });
 
 app.get('/business', async(req, res) => {
@@ -43,6 +44,22 @@ app.get('/business', async(req, res) => {
     console.log(business);
     res.render('businesses/index', { business });
 })
+
+app.get('/business/new', (req, res) => {
+    res.render('businesses/new');
+})
+
+app.get('/business/:id', async (req, res) => {
+    const business = await Business.findById(req.params.id);
+    console.log(business);
+    res.render('businesses/show', { business });
+})
+
+app.post('/business', async (req, res) => {
+    const business = new Business(req.body.business);
+    await business.save();
+    res.redirect(`/business/${business._id}`);
+});
 
 
 app.listen(3000, () => {
