@@ -49,6 +49,11 @@ app.get('/business/new', (req, res) => {
     res.render('businesses/new');
 })
 
+app.get('/business/:id/update', async (req, res) => {
+    const business = await Business.findById(req.params.id);
+    res.render('businesses/update', { business });
+})
+
 app.get('/business/:id', async (req, res) => {
     const business = await Business.findById(req.params.id);
     console.log(business);
