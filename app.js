@@ -54,6 +54,19 @@ app.get('/business/:id/update', async (req, res) => {
     res.render('businesses/update', { business });
 })
 
+app.put('/business/:id', async (req, res) => {
+  const { id } = req.params;
+  await Business.findByIdAndUpdate(id, req.body.business);
+  res.redirect(`/business/${id}`);
+});
+
+app.delete('/business/:id', async (req, res) => {
+  const { id } = req.params;
+  await Business.findByIdAndDelete(id);
+  res.redirect('/business');
+});
+
+
 app.get('/business/:id', async (req, res) => {
     const business = await Business.findById(req.params.id);
     console.log(business);

@@ -12,5 +12,8 @@
     <h1><%= business.location %></h1>
     <a href="/business">Back to all businesses</a>
     <a href="/business/<%= business._id %>/update">Update this business</a>
+    <form action="/business/<%= business._id %>?_method=DELETE" method="POST">
+        <button type="submit">Delete</button>
+    </form>
 </body>
 </html>
