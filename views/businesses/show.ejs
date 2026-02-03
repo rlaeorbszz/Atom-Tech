@@ -15,5 +15,28 @@
     <form action="/business/<%= business._id %>?_method=DELETE" method="POST">
         <button type="submit">Delete</button>
     </form>
+
+    <h2>Leave a Review</h2>
+    <form action="/business/<%= business._id %>/reviews" method="POST">
+        <div>
+            <label for="rating">Rating</label>
+            <input type="range" id="rating" name="review[rating]" min="1" max="5" value="3">
+            <span id="ratingValue">3</span>
+        </div>
+        <div>
+            <label for="body">Review</label>
+            <textarea id="body" name="review[body]" cols="30" rows="3"></textarea>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const ratingInput = document.getElementById('rating');
+        const ratingValue = document.getElementById('ratingValue');
+
+        ratingInput.addEventListener('input', function() {
+            ratingValue.textContent = this.value;
+        });
+    </script>
 </body>
 </html>
