@@ -30,6 +30,17 @@
         <button type="submit">Submit</button>
     </form>
 
+    <h2>Reviews</h2>
+    <ul>
+        <% for (let review of business.reviews) { %>
+            <li>
+                Rating: <%= review.rating %> / 5
+                <br>
+                <%= review.body %>
+            </li>
+        <% } %>
+    </ul>
+
     <script>
         const ratingInput = document.getElementById('rating');
         const ratingValue = document.getElementById('ratingValue');
