@@ -80,20 +80,20 @@ app.post('/business', async (req, res) => {
 });
 
 app.post('/business/:id/reviews', async (req, res) => {
-    // 1. URL에서 받은 business ID로 비즈니스 찾기
+   
     const business = await Business.findById(req.params.id);
     
-    // 2. 폼에서 받은 데이터로 새 Review 객체 생성
+    
     const review = new Review(req.body.review);
+                       
     
-    // 3. 생성한 리뷰를 비즈니스의 reviews 배열에 추가
     business.reviews.push(review);
-    
-    // 4. 리뷰와 비즈니스 모두 데이터베이스에 저장 (await 필수!)
+     
+   
     await review.save();
     await business.save();
     
-    // 5. 저장 후 상세 페이지로 이동해 새로운 리뷰 확인
+  
     res.redirect(`/business/${business._id}`);
 });
 
