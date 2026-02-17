@@ -97,7 +97,18 @@ app.post('/business/:id/reviews', async (req, res) => {
     res.redirect(`/business/${business._id}`);
 });
 
+// DELETE a review: remove from Business.reviews and delete Review doc
+app.delete('/business/:id/reviews/:reviewId', async (req, res) => {
+    const { id, reviewId } = req.params;
+    // Remove the review id from the business' reviews array
+    await Business.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
+    // Delete the review document itself
+    await Review.findByIdAndDelete(reviewId);
+    // Redirect back to the business show page
+    res.redirect(`/business/${id}`);
+});
+
 
 app.listen(3000, () => {
-    console.log('Serving on port 3000')
+        console.log('Serving on port 3000')
 })
