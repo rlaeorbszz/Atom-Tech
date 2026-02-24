@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= business.title %></title>
+</head>
+<body>
+    <h1><%= business.title %> <%= business.averageRating %> &#9733;</h1>
+    <h1><%= business.description %></h1>
+    <h1><%= business.location %></h1>
+    <a href="/business">Back to all businesses</a>
+    <a href="/business/<%= business._id %>/update">Update this business</a>
+    <form action="/business/<%= business._id %>?_method=DELETE" method="POST">
+        <button type="submit">Delete</button>
+    </form>
+
+    <h2>Leave a Review</h2>
+    <form action="/business/<%= business._id %>/reviews" method="POST">
+        <div>
+            <label for="rating">Rating</label>
+            <input type="range" id="rating" name="review[rating]" min="1" max="5" value="3">
+            <span id="ratingValue">3</span>
+        </div>
+        <div>
+            <label for="body">Review</label>
+            <textarea id="body" name="review[body]" cols="30" rows="3"></textarea>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>Reviews</h2>
+    <ul>
+        <% for (let review of business.reviews) { %>
+            <li>
+                Rating: <%= review.rating %> / 5
+                <br>
+                <%= review.body %>
+                <form action="/business/<%= business._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="display:inline;margin-left:10px;">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        <% } %>
+    </ul>
+
+    <script>
+        const ratingInput = document.getElementById('rating');
+        const ratingValue = document.getElementById('ratingValue');
+
+        ratingInput.addEventListener('input', function() {
+            ratingValue.textContent = this.value;
+        });
+    </script>
+</body>
+</html>
