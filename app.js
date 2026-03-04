@@ -2,11 +2,19 @@ import express from "express";
 import path from "path";
 import mongoose from "mongoose";
 import methodOverride from "method-override";
+import dotenv from "dotenv";
+import OpenAI from "openai";
 import Business from "./models/business.js";
 import Review from "./models/review.js";
 import { fileURLToPath } from 'url';
 
-const url = "mongodb+srv:///yelpclone?retryWrites=true&w=majority";
+dotenv.config();
+const url = process.env.MONGO_URL;
+
+if (!url) {
+    throw new Error("MONGO_URL is not set in .env");
+}
+
 mongoose.connect(url, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -100,6 +108,54 @@ app.post('/business/:id/reviews', async (req, res) => {
     await business.save();
   
     res.redirect(`/business/${business._id}`);
+});
+
+app.post('/business/:id/chat', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { message } = req.body;
+
+        if (!message || !message.trim()) {
+            return res.status(400).json({ reply: "Please enter a message." });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            return res.status(500).json({ reply: "OPENAI_API_KEY is not configured." });
+        }
+
+        const business = await Business.findById(id).populate('reviews');
+        if (!business) {
+            return res.status(404).json({ reply: "Business not found." });
+        }
+
+        const reviewSummary = business.reviews.length
+            ? business.reviews
+                .slice(0, 10)
+                .map((r) => `- Rating: ${r.rating}/5, Review: ${r.body || ""}`)
+                .join("\n")
+            : "No reviews yet.";
+
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const response = await openai.responses.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+            input: [
+                {
+                    role: "system",
+                    content:
+                        "You are a friendly assistant for one business page. Keep answers short and polite. Base answers only on the provided business details and reviews. If the requested information is not in the provided data, clearly say you don't have that information.",
+                },
+                {
+                    role: "user",
+                    content: `Business: ${business.title}\nLocation: ${business.location}\nDescription: ${business.description}\nAverage Rating: ${business.averageRating}\nReviews:\n${reviewSummary}\n\nUser question: ${message}`,
+                },
+            ],
+        });
+
+        return res.json({ reply: response.output_text || "No response generated." });
+    } catch (error) {
+        console.error("Chat route error:", error);
+        return res.status(500).json({ reply: "Sorry, something went wrong. Please try again." });
+    }
 });
 
 // DELETE a review: remove from Business.reviews and delete Review doc

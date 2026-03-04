@@ -11,10 +11,46 @@
     <div>
         <a href="/business/new">Add Business</a>
     </div>
-    <ul>
+    <div>
+        <label for="sortOption">Sort Businesses:</label>
+        <select id="sortOption" onchange="sortBusinesses()">
+            <option value="az">A-Z</option>
+            <option value="za">Z-A</option>
+            <option value="lowToHigh">★ Low to High</option>
+            <option value="highToLow">★ High to Low</option>
+        </select>
+    </div>
+    <ul id="businessList">
         <% for (let b of business) { %>
-            <li><a href="/business/<%= b._id %>"><%= b.title %></a> <%= b.averageRating %> &#9733;</li>
+            <li class="business-item" data-title="<%= b.title %>" data-rating="<%= b.averageRating %>">
+                <a href="/business/<%= b._id %>"><%= b.title %></a> <%= b.averageRating %> &#9733;
+            </li>
             <% }%>
     </ul>
+    <script>
+        function sortBusinesses() {
+            const sortOption = document.getElementById('sortOption').value;
+            const businessList = document.getElementById('businessList');
+            const businessItems = Array.from(document.querySelectorAll('.business-item'));
+
+            businessItems.sort((a, b) => {
+                const titleA = a.dataset.title.toLowerCase();
+                const titleB = b.dataset.title.toLowerCase();
+                const ratingA = parseFloat(a.dataset.rating) || 0;
+                const ratingB = parseFloat(b.dataset.rating) || 0;
+
+                if (sortOption === 'az') return titleA.localeCompare(titleB);
+                if (sortOption === 'za') return titleB.localeCompare(titleA);
+                if (sortOption === 'lowToHigh') return ratingA - ratingB;
+                if (sortOption === 'highToLow') return ratingB - ratingA;
+                return 0;
+            });
+
+            businessList.innerHTML = '';
+            for (const item of businessItems) {
+                businessList.appendChild(item);
+            }
+        }
+    </script>
 </body>
 </html>

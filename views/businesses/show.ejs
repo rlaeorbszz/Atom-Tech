@@ -44,12 +44,58 @@
         <% } %>
     </ul>
 
+    <hr>
+    <h2>AI Buddy</h2>
+    <div id="chatMessages" style="border:1px solid #ccc; padding:10px; min-height:120px; margin-bottom:10px;"></div>
+    <form id="chatForm">
+        <input
+            type="text"
+            id="chatInput"
+            placeholder="Ask about this business..."
+            style="width:70%;"
+        />
+        <button type="submit">Send</button>
+    </form>
+
     <script>
         const ratingInput = document.getElementById('rating');
         const ratingValue = document.getElementById('ratingValue');
 
         ratingInput.addEventListener('input', function() {
             ratingValue.textContent = this.value;
+        });
+
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+
+        function appendChatMessage(sender, text) {
+            const p = document.createElement('p');
+            p.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatMessages.appendChild(p);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            appendChatMessage('You', message);
+            chatInput.value = '';
+
+            try {
+                const response = await fetch('/business/<%= business._id %>/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                appendChatMessage('Bot', data.reply || 'No reply.');
+            } catch (error) {
+                appendChatMessage('Bot', 'Error contacting chatbot.');
+            }
         });
     </script>
 </body>
