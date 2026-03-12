@@ -1,20 +1,15 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import path from "path";
 import mongoose from "mongoose";
 import methodOverride from "method-override";
-import dotenv from "dotenv";
 import OpenAI from "openai";
 import Business from "./models/business.js";
 import Review from "./models/review.js";
 import { fileURLToPath } from 'url';
 
-dotenv.config();
 const url = process.env.MONGO_URL;
-
-if (!url) {
-    throw new Error("MONGO_URL is not set in .env");
-}
-
 mongoose.connect(url, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -24,6 +19,10 @@ const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
     console.log("Database connected");
+});
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
 });
 
 const app = express();
@@ -113,14 +112,10 @@ app.post('/business/:id/reviews', async (req, res) => {
 app.post('/business/:id/chat', async (req, res) => {
     try {
         const { id } = req.params;
-        const { message } = req.body;
+        const message = req.body.message?.trim();
 
-        if (!message || !message.trim()) {
+        if (!message) {
             return res.status(400).json({ reply: "Please enter a message." });
-        }
-
-        if (!process.env.OPENAI_API_KEY) {
-            return res.status(500).json({ reply: "OPENAI_API_KEY is not configured." });
         }
 
         const business = await Business.findById(id).populate('reviews');
@@ -128,33 +123,30 @@ app.post('/business/:id/chat', async (req, res) => {
             return res.status(404).json({ reply: "Business not found." });
         }
 
-        const reviewSummary = business.reviews.length
+        const reviewsText = business.reviews.length
             ? business.reviews
-                .slice(0, 10)
-                .map((r) => `- Rating: ${r.rating}/5, Review: ${r.body || ""}`)
+                .map((review) => `Rating: ${review.rating}/5, Review: ${review.body}`)
                 .join("\n")
             : "No reviews yet.";
 
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const response = await openai.responses.create({
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+            model: "gpt-4o-mini",
             input: [
                 {
                     role: "system",
-                    content:
-                        "You are a friendly assistant for one business page. Keep answers short and polite. Base answers only on the provided business details and reviews. If the requested information is not in the provided data, clearly say you don't have that information.",
+                    content: "You are a friendly assistant for one business page. Keep answers short and polite. Base answers only on the provided business details and reviews. If the answer is not in the provided data, say you do not have that information."
                 },
                 {
                     role: "user",
-                    content: `Business: ${business.title}\nLocation: ${business.location}\nDescription: ${business.description}\nAverage Rating: ${business.averageRating}\nReviews:\n${reviewSummary}\n\nUser question: ${message}`,
-                },
-            ],
+                    content: `Business title: ${business.title}\nLocation: ${business.location}\nDescription: ${business.description}\nAverage rating: ${business.averageRating}\nReviews:\n${reviewsText}\n\nUser question: ${message}`
+                }
+            ]
         });
 
-        return res.json({ reply: response.output_text || "No response generated." });
+        res.json({ reply: response.output_text || "I do not have a response right now." });
     } catch (error) {
-        console.error("Chat route error:", error);
-        return res.status(500).json({ reply: "Sorry, something went wrong. Please try again." });
+        console.error("OpenAI chat error:", error);
+        res.status(500).json({ reply: "Something went wrong while contacting AI Buddy." });
     }
 });
 

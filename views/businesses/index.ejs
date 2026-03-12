@@ -12,6 +12,10 @@
         <a href="/business/new">Add Business</a>
     </div>
     <div>
+        <label for="search">Search Businesses:</label>
+        <input type="text" id="search" onkeyup="searchBusinesses()" placeholder="Search by keyword or phrase">
+    </div>
+    <div>
         <label for="sortOption">Sort Businesses:</label>
         <select id="sortOption" onchange="sortBusinesses()">
             <option value="az">A-Z</option>
@@ -28,6 +32,16 @@
             <% }%>
     </ul>
     <script>
+        function searchBusinesses() {
+            const searchValue = document.getElementById('search').value.toLowerCase().trim();
+            const businessItems = document.querySelectorAll('.business-item');
+
+            for (const item of businessItems) {
+                const itemText = item.textContent.toLowerCase();
+                item.style.display = itemText.includes(searchValue) ? '' : 'none';
+            }
+        }
+
         function sortBusinesses() {
             const sortOption = document.getElementById('sortOption').value;
             const businessList = document.getElementById('businessList');
