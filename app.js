@@ -4,6 +4,7 @@ import express from "express";
 import path from "path";
 import mongoose from "mongoose";
 import methodOverride from "method-override";
+import session from "express-session";
 import OpenAI from "openai";
 import Business from "./models/business.js";
 import Review from "./models/review.js";
@@ -26,6 +27,7 @@ const openai = new OpenAI({
 });
 
 const app = express();
+const sessionSecret = process.env.SESSION_SECRET || "atomtech-session-secret";
 
 app.set("view engine", "ejs");
 
@@ -37,6 +39,11 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.json());
+app.use(session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: true
+}));
 
 
 app.get('/', (req, res) => {
@@ -109,19 +116,29 @@ app.post('/business/:id/reviews', async (req, res) => {
     res.redirect(`/business/${business._id}`);
 });
 
-app.post('/business/:id/chat', async (req, res) => {
+app.post('/chat', async (req, res) => {
     try {
-        const { id } = req.params;
-        const message = req.body.message?.trim();
+        const { businessId, prompt } = req.body;
+        const trimmedPrompt = prompt?.trim();
 
-        if (!message) {
+        if (!trimmedPrompt) {
             return res.status(400).json({ reply: "Please enter a message." });
         }
 
-        const business = await Business.findById(id).populate('reviews');
+        if (!businessId) {
+            return res.status(400).json({ reply: "Business id is required." });
+        }
+
+        const business = await Business.findById(businessId).populate('reviews');
         if (!business) {
             return res.status(404).json({ reply: "Business not found." });
         }
+
+        if (!req.session.chatHistory) {
+            req.session.chatHistory = {};
+        }
+
+        const chatHistory = req.session.chatHistory[businessId] || [];
 
         const reviewsText = business.reviews.length
             ? business.reviews
@@ -129,8 +146,14 @@ app.post('/business/:id/chat', async (req, res) => {
                 .join("\n")
             : "No reviews yet.";
 
+        const historyText = chatHistory.length
+            ? chatHistory
+                .map((entry) => `${entry.role}: ${entry.content}`)
+                .join("\n")
+            : "No previous conversation.";
+
         const response = await openai.responses.create({
-            model: "gpt-4o-mini",
+            model: "gpt-5.2",
             input: [
                 {
                     role: "system",
@@ -138,12 +161,19 @@ app.post('/business/:id/chat', async (req, res) => {
                 },
                 {
                     role: "user",
-                    content: `Business title: ${business.title}\nLocation: ${business.location}\nDescription: ${business.description}\nAverage rating: ${business.averageRating}\nReviews:\n${reviewsText}\n\nUser question: ${message}`
+                    content: `Business title: ${business.title}\nLocation: ${business.location}\nDescription: ${business.description}\nAverage rating: ${business.averageRating}\nReviews:\n${reviewsText}\n\nPrevious conversation:\n${historyText}\n\nUser prompt: ${trimmedPrompt}`
                 }
             ]
         });
 
-        res.json({ reply: response.output_text || "I do not have a response right now." });
+        const reply = response.output_text || "I do not have a response right now.";
+        req.session.chatHistory[businessId] = [
+            ...chatHistory,
+            { role: "user", content: trimmedPrompt },
+            { role: "assistant", content: reply }
+        ].slice(-10);
+
+        res.json({ reply });
     } catch (error) {
         console.error("OpenAI chat error:", error);
         res.status(500).json({ reply: "Something went wrong while contacting AI Buddy." });

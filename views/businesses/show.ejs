@@ -47,7 +47,7 @@
     <hr>
     <h2>AI Buddy</h2>
     <div id="chatMessages" style="border:1px solid #ccc; padding:10px; min-height:120px; margin-bottom:10px;"></div>
-    <form id="chatForm">
+    <form id="chatForm" onsubmit="sendChat(event)">
         <input
             type="text"
             id="chatInput"
@@ -76,19 +76,22 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        chatForm.addEventListener('submit', async function(event) {
+        async function sendChat(event) {
             event.preventDefault();
-            const message = chatInput.value.trim();
-            if (!message) return;
+            const prompt = chatInput.value.trim();
+            if (!prompt) return;
 
-            appendChatMessage('You', message);
+            appendChatMessage('You', prompt);
             chatInput.value = '';
 
             try {
-                const response = await fetch('/business/<%= business._id %>/chat', {
+                const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({
+                        businessId: '<%= business._id %>',
+                        prompt
+                    })
                 });
 
                 const data = await response.json();
@@ -96,7 +99,7 @@
             } catch (error) {
                 appendChatMessage('Bot', 'Error contacting chatbot.');
             }
-        });
+        }
     </script>
 </body>
 </html>
